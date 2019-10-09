@@ -157,7 +157,7 @@ template<typename T> std::string FloatToString(T t, int precision) {
     // platform and isn't available on Android, so we use stringstream
     std::stringstream ss;
     // Use std::fixed to suppress scientific notation.
-    ss << std::fixed;
+    ss << std::scientific;
     // Default precision is 6, we want that to be higher for doubles.
     ss << std::setprecision(precision);
     ss << t;
@@ -165,14 +165,16 @@ template<typename T> std::string FloatToString(T t, int precision) {
   #else // FLATBUFFERS_PREFER_PRINTF
     auto v = static_cast<double>(t);
     auto s = NumToStringImplWrapper(v, "%0.*f", precision);
+
+    // Sadly, std::fixed turns "1" into "1.00000", so here we undo that.
+    auto p = s.find_last_not_of('0');
+    if (p != std::string::npos) {
+      // Strip trailing zeroes. If it is a whole number, keep one zero.
+      s.resize(p + (s[p] == '.' ? 2 : 1));
+    }
   #endif // FLATBUFFERS_PREFER_PRINTF
+
   // clang-format on
-  // Sadly, std::fixed turns "1" into "1.00000", so here we undo that.
-  auto p = s.find_last_not_of('0');
-  if (p != std::string::npos) {
-    // Strip trailing zeroes. If it is a whole number, keep one zero.
-    s.resize(p + (s[p] == '.' ? 2 : 1));
-  }
   return s;
 }
 
